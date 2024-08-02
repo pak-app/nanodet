@@ -31,7 +31,6 @@ if __name__ == "__main__":
     
     
     ann_real = list(map(float, ann_real[1:]))
-    cv2.imshow("imgshow", img)
     # Scale annotations
     p1, p2 = create_boxes(img.shape, ann_real)
 
@@ -46,16 +45,20 @@ if __name__ == "__main__":
     print("cordiante of bounding box:")
     print("P1:", int(x), int(y))
     print("P2:", int(w), int(h))
+    print(x, y, w, h)
 
+
+    # Points format:
+    # P1: Y, X
+    # P2: W, H
+    
     # Draw the bounding box
-    cv2.rectangle(img, (int(x), int(y)), (int(w), int(h)), (0, 255, 0), 2)
+    # cv2.rectangle(img, (int(x), int(y)), (int(w), int(h)), (0, 255, 0), 2)
     cv2.rectangle(img, (int(y), int(x)), (int(w), int(h)), (0, 0, 255), 2)
     cv2.rectangle(img, p1, p2, (255, 0, 0), 2)
-
+    cv2.circle(img, (int(y), int(x)), radius=0, color=(255, 255, 255), thickness=15)
+    cv2.circle(img, (int(h), int(w)), radius=0, color=(255, 255, 255), thickness=15)
     # Display the image
     cv2.imshow('Image with Bounding Box', img)
-    cv2.waitKey(0)
-    cv2.destroyAllWindows()
-    cv2.imshow("Image", img)
     cv2.waitKey(0)
     cv2.destroyAllWindows()
