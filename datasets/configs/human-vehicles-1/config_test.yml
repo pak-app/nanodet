@@ -1,0 +1,134 @@
+# nanodet-plus-m_416
+# COCO mAP(0.5:0.95) = 0.304
+#             AP_50  = 0.459
+#             AP_75  = 0.317
+#           AP_small = 0.106
+#               AP_m = 0.322
+#               AP_l = 0.477
+save_dir: workspace/human-vehicles-1
+model:
+  weight_averager:
+    name: ExpMovingAverager
+    decay: 0.9998
+  arch:
+    name: NanoDetPlus
+    detach_epoch: 10
+    backbone:
+      name: ShuffleNetV2
+      model_size: 1.0x
+      out_stages: [2,3,4]
+      activation: LeakyReLU
+    fpn:
+      name: GhostPAN
+      in_channels: [116, 232, 464]
+      out_channels: 96
+      kernel_size: 5
+      num_extra_level: 1
+      use_depthwise: True
+      activation: LeakyReLU
+    head:
+      name: NanoDetPlusHead
+      num_classes: 4
+      input_channel: 96
+      feat_channels: 96
+      stacked_convs: 2
+      kernel_size: 5
+      strides: [8, 16, 32, 64]
+      activation: LeakyReLU
+      reg_max: 7
+      norm_cfg:
+        type: BN
+      loss:
+        loss_qfl:
+          name: QualityFocalLoss
+          use_sigmoid: True
+          beta: 2.0
+          loss_weight: 1.0
+        loss_dfl:
+          name: DistributionFocalLoss
+          loss_weight: 0.25
+        loss_bbox:
+          name: GIoULoss
+          loss_weight: 2.0
+    # Auxiliary head, only use in training time.
+    aux_head:
+      name: SimpleConvHead
+      num_classes: 4
+      input_channel: 192
+      feat_channels: 192
+      stacked_convs: 4
+      strides: [8, 16, 32, 64]
+      activation: LeakyReLU
+      reg_max: 7
+
+# Define class names
+class_names:  &class_names ['car','heavy_vehicle','human','motorbike']
+
+# Define train data paths (1- Image 2- Annotations):
+train_path: &train_path ${DATASET_PARENT_DIR}/${DATASET_DIR}/${DATASET_TRAIN_DIR}
+
+# Define validation data paths (1- Image 2- Annotations):
+valid_path: &valid_path ${DATASET_PARENT_DIR}/${DATASET_DIR}/${DATASET_VALID_DIR}
+
+# Define test data paths (1- Image 2- Annotations):
+test_path: &test_path  ${DATASET_PARENT_DIR}/${DATASET_DIR}/${DATASET_TEST_DIR}
+
+# Define export data paths (1- Image 2- Annotations):
+export_path: &export_path  ${DATASET_PARENT_DIR}/${DATASET_DIR}/${DATASET_EXPORT_DIR}
+
+data:
+  train:
+    name: YoloDataset
+    img_path: /teamspace/studios/this_studio/nanodet/datasets/data/human-vehicles-1/train
+    ann_path: /teamspace/studios/this_studio/nanodet/datasets/data/human-vehicles-1/train
+    class_names: *class_names
+    input_size: [416,416] #[w,h]
+    keep_ratio: False
+    pipeline:
+      perspective: 0.0
+      scale: [0.6, 1.4]
+      stretch: [[0.8, 1.2], [0.8, 1.2]]
+      rotation: 0
+      shear: 0
+      translate: 0.2
+      flip: 0.5
+      brightness: 0.2
+      contrast: [0.6, 1.4]
+      saturation: [0.5, 1.2]
+      normalize: [[103.53, 116.28, 123.675], [57.375, 57.12, 58.395]]
+  val:
+    name: YoloDataset
+    img_path: /teamspace/studios/this_studio/nanodet/datasets/data/human-vehicles-1/test
+    ann_path: /teamspace/studios/this_studio/nanodet/datasets/data/human-vehicles-1/test
+    class_names: *class_names
+    input_size: [416,416] #[w,h]
+    keep_ratio: False
+    pipeline:
+      normalize: [[103.53, 116.28, 123.675], [57.375, 57.12, 58.395]]
+device:
+  gpu_ids: [0]
+  workers_per_gpu: 10
+  batchsize_per_gpu: 86
+schedule:
+ resume: # If you uncomment this section, training process will resume from last weights. ** Half space is important. **
+#  load_model:
+  optimizer:
+    name: AdamW
+    lr: 0.001
+    weight_decay: 0.05
+  warmup:
+    name: linear
+    steps: 500
+    ratio: 0.0001
+  total_epochs: 300
+  lr_schedule:
+    name: CosineAnnealingLR
+    T_max: 300
+    eta_min: 0.00005
+  val_intervals: 10
+grad_clip: 35
+evaluator:
+  name: CocoDetectionEvaluator
+  save_key: mAP
+log:
+  interval: 45
