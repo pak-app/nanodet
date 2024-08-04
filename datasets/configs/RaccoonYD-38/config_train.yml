@@ -110,8 +110,9 @@ device:
   workers_per_gpu: 10
   batchsize_per_gpu: 30
 schedule:
-#  resume:
+ resume:
 #  load_model:
+#   pytorch-lightning_version: 1.9.5
   optimizer:
     name: AdamW
     lr: 0.001
